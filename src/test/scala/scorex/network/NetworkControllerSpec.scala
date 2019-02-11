@@ -11,7 +11,7 @@ import akka.util.ByteString
 import org.scalatest.{FlatSpec, Matchers}
 import scorex.core.network._
 import scorex.core.network.message._
-import scorex.core.network.peer.{LocalAddressPeerFeature, LocalAddressPeerFeatureSerializer, PeerManagerRef}
+import scorex.core.network.peer.{LocalAddressPeerFeature, LocalAddressPeerFeatureSerializer, PeerInfo, PeerManagerRef}
 import scorex.core.settings.{NetworkSettings, ScorexSettings}
 import scorex.core.utils.LocalTimeProvider
 import org.scalatest.TryValues._
@@ -262,7 +262,7 @@ class NetworkControllerSpec extends FlatSpec with Matchers {
     val handshakeFromNode  = testPeer.receiveHandshake
     val nodeLocalAddress = extractLocalAddrFeat(handshakeFromNode).value.address
     testPeer.sendHandshake(None, Some(peerLocalAddress))
-    testPeer.sendPeers(Seq(nodeLocalAddress))
+    testPeer.sendPeers(Seq(PeerInfo(System.currentTimeMillis(), Some(nodeLocalAddress), Version.last)))
 
     testPeer.sendGetPeers
     val peers = testPeer.receivePeers
@@ -423,7 +423,7 @@ class TestPeer(settings: ScorexSettings, networkControllerRef: ActorRef, tcpMana
   /**
     * Receive sequence of peer addresses from node
     */
-  def receivePeers: Seq[InetSocketAddress] = {
+  def receivePeers: Seq[PeerInfo] = {
     val message = receiveMessage
     message.spec.messageCode should be (PeersSpec.messageCode)
     PeersSpec.parseBytes(message.input.left.value).success.value
@@ -432,7 +432,7 @@ class TestPeer(settings: ScorexSettings, networkControllerRef: ActorRef, tcpMana
   /**
     * Send sequence of peer addresses to node
     */
-  def sendPeers(peers: Seq[InetSocketAddress]): Unit = {
+  def sendPeers(peers: Seq[PeerInfo]): Unit = {
     val msg = Message(PeersSpec, Right(peers), None)
     sendMessage(msg)
   }

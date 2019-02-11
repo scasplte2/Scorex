@@ -35,28 +35,19 @@ class PeerSynchronizer(val networkControllerRef: ActorRef, peerManager: ActorRef
   }
 
   override def receive: Receive = {
-    case DataFromPeer(spec, peers: Seq[InetSocketAddress]@unchecked, remote)
-      if spec.messageCode == PeersSpec.messageCode && peers.cast[Seq[InetSocketAddress]].isDefined =>
+    case DataFromPeer(spec, peers: Seq[PeerInfo]@unchecked, remote)
+      if spec.messageCode == PeersSpec.messageCode && peers.cast[Seq[PeerInfo]].isDefined =>
 
-      peers.foreach(isa => peerManager ! AddOrUpdatePeer(isa, None, None, Seq()))
+      peers.foreach(peerInfo => peerManager ! AddOrUpdatePeer(peerInfo))
 
     case DataFromPeer(spec, _, peer) if spec.messageCode == GetPeersSpec.messageCode =>
 
-      //todo: externalize the number, check on receiving
+      //todo: externalize the number or increase it (bitcoin uses 1000)
+      //todo: check on receiving
       (peerManager ? RandomPeers(3))
         .mapTo[Seq[PeerInfo]]
         .foreach { peers =>
-          val peerAddrs = if (peer.remote.getAddress.isSiteLocalAddress) {
-            peers.flatMap { peer =>
-              peer.features
-                .collectFirst { case LocalAddressPeerFeature(addr) => addr }
-                .orElse(peer.declaredAddress)
-            }
-          } else {
-            peers.flatMap(_.declaredAddress)
-          }
-
-          val msg = Message(PeersSpec, Right(peerAddrs), None)
+          val msg = Message(PeersSpec, Right(peers), None)
           networkControllerRef ! SendToNetwork(msg, SendToPeers(Seq(peer)))
         }
 

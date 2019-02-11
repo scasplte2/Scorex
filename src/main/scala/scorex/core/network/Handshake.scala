@@ -15,8 +15,8 @@ case class Handshake(applicationName: String,
                      features: Seq[PeerFeature],
                      time: Long) {
 
-  require(Option(applicationName).isDefined)
-  require(Option(protocolVersion).isDefined)
+  assert(Option(applicationName).isDefined)
+  assert(Option(protocolVersion).isDefined)
 }
 
 class HandshakeSerializer(featureSerializers: PeerFeature.Serializers,

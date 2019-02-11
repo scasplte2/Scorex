@@ -245,7 +245,7 @@ class NetworkController(settings: NetworkSettings,
     connectionForHandler(peerHandler).foreach { connectedPeer =>
 
       log.trace(s"Got handshake from $peerInfo")
-      val peerAddress = peerInfo.declaredAddress.orElse(peerInfo.localAddress).getOrElse(connectedPeer.remote)
+      val peerAddress = peerInfo.address.orElse(peerInfo.localAddressOpt).getOrElse(connectedPeer.remote)
 
       //drop connection to self if occurred or peer already connected
       if (isSelf(connectedPeer.remote) || connectionForPeerAddress(peerAddress).exists(_.handlerRef != peerHandler)) {
@@ -254,9 +254,8 @@ class NetworkController(settings: NetworkSettings,
         connections -= connectedPeer.remote
       } else {
         if (peerInfo.reachablePeer) {
-          val peerName = peerInfo.nodeName
-          val peerFeats = peerInfo.features
-          peerManagerRef ! AddOrUpdatePeer(peerAddress, peerName, peerInfo.connectionType, peerFeats)
+          val infoWithAddress = peerInfo.copy(address = Some(peerAddress))
+          peerManagerRef ! AddOrUpdatePeer(infoWithAddress)
         } else {
           peerManagerRef ! RemovePeer(peerAddress)
         }
@@ -315,8 +314,7 @@ class NetworkController(settings: NetworkSettings,
     * @return socket address of the peer
     */
   private def getPeerAddress(peer: PeerInfo): Option[InetSocketAddress] = {
-    val peerLocalAddress = peer.features.collectFirst { case LocalAddressPeerFeature(addr) => addr }
-    (peerLocalAddress, peer.declaredAddress) match {
+    (peer.localAddressOpt, peer.address) match {
       case (Some(localAddr), _) =>
         Some(localAddr)
 
@@ -328,7 +326,7 @@ class NetworkController(settings: NetworkSettings,
       case (None, declaredAddressOpt) =>
         declaredAddressOpt
 
-      case _ => peer.declaredAddress
+      case _ => peer.address
     }
   }
 

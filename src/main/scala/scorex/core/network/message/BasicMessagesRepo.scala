@@ -7,6 +7,7 @@ import java.util
 import com.google.common.primitives.{Bytes, Ints}
 import scorex.core.consensus.SyncInfo
 import scorex.core.network.message.Message.MessageCode
+import scorex.core.network.peer.PeerInfo
 import scorex.core.{ModifierTypeId, NodeViewModifier}
 import scorex.util.{ModifierId, ScorexLogging, bytesToId, idToBytes}
 
@@ -147,7 +148,7 @@ object GetPeersSpec extends MessageSpecV1[Unit] {
   override def toBytes(data: Unit): Array[Byte] = Array()
 }
 
-object PeersSpec extends MessageSpecV1[Seq[InetSocketAddress]] {
+object PeersSpec extends MessageSpecV1[Seq[PeerInfo]] {
   private val AddressLength = 4
   private val PortLength = 4
   private val DataLength = 4
@@ -156,27 +157,11 @@ object PeersSpec extends MessageSpecV1[Seq[InetSocketAddress]] {
 
   override val messageName: String = "Peers message"
 
-  override def parseBytes(bytes: Array[Byte]): Try[Seq[InetSocketAddress]] = Try {
-    val lengthBytes = util.Arrays.copyOfRange(bytes, 0, DataLength)
-    val length = Ints.fromByteArray(lengthBytes)
-
-    require(bytes.length == DataLength + (length * (AddressLength + PortLength)), "Data does not match length")
-
-    (0 until length).map { i =>
-      val position = lengthBytes.length + (i * (AddressLength + PortLength))
-      val addressBytes = util.Arrays.copyOfRange(bytes, position, position + AddressLength)
-      val address = InetAddress.getByAddress(addressBytes)
-      val portBytes = util.Arrays.copyOfRange(bytes, position + AddressLength, position + AddressLength + PortLength)
-      new InetSocketAddress(address, Ints.fromByteArray(portBytes))
-    }
+  override def parseBytes(bytes: Array[Byte]): Try[Seq[PeerInfo]] = Try {
+    ???
   }
 
-  override def toBytes(peers: Seq[InetSocketAddress]): Array[Byte] = {
-    val length = peers.size
-    val lengthBytes = Ints.toByteArray(length)
-
-    peers.foldLeft(lengthBytes) { case (bs, peer) =>
-      Bytes.concat(bs, peer.getAddress.getAddress, Ints.toByteArray(peer.getPort))
-    }
+  override def toBytes(peers: Seq[PeerInfo]): Array[Byte] = {
+    ???
   }
 }
