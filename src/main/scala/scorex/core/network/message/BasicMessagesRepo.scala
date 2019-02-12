@@ -1,6 +1,10 @@
 package scorex.core.network.message
 
+import java.net.{InetAddress, InetSocketAddress}
+
+import scorex.core.app.ApplicationVersionSerializer
 import scorex.core.consensus.SyncInfo
+import scorex.core.network.{Handshake, PeerFeature}
 import scorex.core.network.message.Message.MessageCode
 import scorex.core.network.peer.PeerInfo
 import scorex.core.serialization.ScorexSerializer
@@ -158,14 +162,81 @@ object GetPeersSpec extends MessageSpecV1[Unit] {
   }
 }
 
-object PeersSpec extends MessageSpecV1[Seq[PeerInfo]] {
+object PeersSpec extends MessageSpecV1[Seq[Handshake]] {
   private val AddressLength = 4
 
   override val messageCode: Message.MessageCode = 2: Byte
 
   override val messageName: String = "Peers message"
 
-  override def parse(r: Reader): Seq[PeerInfo] = ???
+  override def parse(r: Reader): Seq[Handshake] = ???
 
-  override def serialize(obj: Seq[PeerInfo], w: Writer): Unit = ???
+  override def serialize(obj: Seq[Handshake], w: Writer): Unit = {
+    ???
+  }
+}
+
+class HandshakeSpec(featureSerializers: PeerFeature.Serializers,
+                    maxHandshakeSize: Int) extends MessageSpecV1[Handshake] {
+
+  override val messageCode: MessageCode = 75: Byte
+  override val messageName: String = "Handshake"
+
+  override def serialize(obj: Handshake, w: Writer): Unit = {
+
+    w.putShortString(obj.applicationName)
+    ApplicationVersionSerializer.serialize(obj.protocolVersion, w)
+    w.putShortString(obj.nodeName)
+
+
+    w.putOption(obj.declaredAddress) { (writer, isa) =>
+      val addr = isa.getAddress.getAddress
+      writer.put((addr.size + 4).toByteExact)
+      writer.putBytes(addr)
+      writer.putUInt(isa.getPort)
+    }
+
+    w.put(obj.features.size.toByteExact)
+    obj.features.foreach { f =>
+      w.put(f.featureId)
+      val fwriter = w.newWriter()
+      f.serializer.serialize(f, fwriter)
+      w.putUShort(fwriter.length.toShortExact)
+      w.append(fwriter)
+    }
+    w.putLong(obj.time)
+  }
+
+  override def parse(r: Reader): Handshake = {
+
+    require(r.remaining <= maxHandshakeSize)
+
+    val appName = r.getShortString()
+    require(appName.nonEmpty)
+
+    val protocolVersion = ApplicationVersionSerializer.parse(r)
+
+    val nodeName = r.getShortString()
+
+    val declaredAddressOpt = r.getOption {
+      val fas = r.getUByte()
+      val fa = r.getBytes(fas - 4)
+      val port = r.getUInt().toIntExact
+      new InetSocketAddress(InetAddress.getByAddress(fa), port)
+    }
+
+    val featuresCount = r.getByte()
+    val feats = (1 to featuresCount).flatMap { _ =>
+      val featId = r.getByte()
+      val featBytesCount = r.getUShort().toShortExact
+      val featChunk = r.getChunk(featBytesCount)
+      //we ignore a feature found in the handshake if we do not know how to parse it or failed to do that
+      featureSerializers.get(featId).flatMap { featureSerializer =>
+        featureSerializer.parseTry(r.newReader(featChunk)).toOption
+      }
+    }
+
+    val time = r.getLong()
+    Handshake(appName, protocolVersion, nodeName, declaredAddressOpt, feats, time)
+  }
 }

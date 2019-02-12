@@ -245,7 +245,8 @@ class NetworkController(settings: NetworkSettings,
     connectionForHandler(peerHandler).foreach { connectedPeer =>
 
       log.trace(s"Got handshake from $peerInfo")
-      val peerAddress = peerInfo.address.orElse(peerInfo.localAddressOpt).getOrElse(connectedPeer.remote)
+      val addressToConnect =
+      val peerAddress = peerInfo.address.orElse(peerInfo.handshake.localAddressOpt).getOrElse(connectedPeer.remote)
 
       //drop connection to self if occurred or peer already connected
       if (isSelf(connectedPeer.remote) || connectionForPeerAddress(peerAddress).exists(_.handlerRef != peerHandler)) {
@@ -253,7 +254,7 @@ class NetworkController(settings: NetworkSettings,
         peerManagerRef ! RemovePeer(peerAddress)
         connections -= connectedPeer.remote
       } else {
-        if (peerInfo.reachablePeer) {
+        if (peerInfo.handshake.reachablePeer) {
           val infoWithAddress = peerInfo.copy(address = Some(peerAddress))
           peerManagerRef ! AddOrUpdatePeer(infoWithAddress)
         } else {

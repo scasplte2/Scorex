@@ -47,7 +47,7 @@ class PeerSynchronizer(val networkControllerRef: ActorRef, peerManager: ActorRef
       (peerManager ? RandomPeers(3))
         .mapTo[Seq[PeerInfo]]
         .foreach { peers =>
-          val msg = Message(PeersSpec, Right(peers), None)
+          val msg = Message(PeersSpec, Right(peers.map(_.handshake)), None)
           networkControllerRef ! SendToNetwork(msg, SendToPeers(Seq(peer)))
         }
 

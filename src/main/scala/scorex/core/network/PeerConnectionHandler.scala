@@ -9,7 +9,7 @@ import akka.util.{ByteString, CompactByteString}
 import scorex.core.app.{ScorexContext, Version}
 import scorex.core.network.NetworkController.ReceivableMessages.Handshaked
 import scorex.core.network.PeerFeature.Serializers
-import scorex.core.network.message.{Message, MessageSerializer, MessageSpec}
+import scorex.core.network.message.{HandshakeSpec, MessageSerializer}
 import scorex.core.network.peer.PeerInfo
 import scorex.core.network.peer.PeerManager.ReceivableMessages.AddToBlacklist
 import scorex.core.serialization.ScorexSerializer
@@ -72,7 +72,7 @@ class PeerConnectionHandler(val settings: NetworkSettings,
     localFeatures.map(f => f.featureId -> (f.serializer: ScorexSerializer[_ <: PeerFeature])).toMap
   }
 
-  private val handshakeSerializer = new HandshakeSerializer(featureSerializers, settings.maxHandshakeSize)
+  private val handshakeSerializer = new HandshakeSpec(featureSerializers, settings.maxHandshakeSize)
   private val messageSerializer = new MessageSerializer(scorexContext.messageSpecs, settings.magicBytes)
 
   // there is no recovery for broken connections

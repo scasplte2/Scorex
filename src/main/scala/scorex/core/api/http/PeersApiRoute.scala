@@ -40,9 +40,9 @@ case class PeersApiRoute(peerManager: ActorRef,
     val result = askActor[Seq[PeerInfo]](networkController, GetConnectedPeers).map {
       _.map { peerInfo =>
         PeerInfoResponse(
-          address = peerInfo.address.map(_.toString).getOrElse(""),
-          lastSeen = peerInfo.lastSeen,
-          name = peerInfo.nodeName,
+          address = peerInfo.handshake.declaredAddress.map(_.toString).getOrElse(""),
+          lastSeen = peerInfo.handshake.time,
+          name = peerInfo.handshake.nodeName,
           connectionType = peerInfo.connectionType.map(_.toString)
         )
       }
@@ -57,14 +57,15 @@ case class PeersApiRoute(peerManager: ActorRef,
     maybeAddress match {
       case None => ApiError.BadRequest
       case Some(addressAndPort) =>
-        val host = InetAddress.getByName(addressAndPort.group(1))
-        val port = addressAndPort.group(2).toInt
-        // todo get correct version and features
-        val version = Version.initial
-        val features: Seq[PeerFeature] = Seq()
-        val peerInfo = PeerInfo(timeProvider.time(), Some(new InetSocketAddress(host, port)), version, None, None, features)
-        networkController ! ConnectTo(peerInfo)
-        ApiResponse.OK
+//        val host = InetAddress.getByName(addressAndPort.group(1))
+//        val port = addressAndPort.group(2).toInt
+//         todo get correct version and features
+//        val version = Version.initial
+//        val features: Seq[PeerFeature] = Seq()
+//        val peerInfo = PeerInfo(timeProvider.time(), Some(new InetSocketAddress(host, port)), version, None, None, features)
+//        networkController ! ConnectTo(peerInfo)
+//        ApiResponse.OK
+        ???
     }
   }
 
@@ -78,15 +79,15 @@ object PeersApiRoute {
 
   case class PeerInfoResponse(address: String,
                               lastSeen: Long,
-                              name: Option[String],
+                              name: String,
                               connectionType: Option[String])
 
   object PeerInfoResponse {
 
     def fromAddressAndInfo(address: InetSocketAddress, peerInfo: PeerInfo): PeerInfoResponse = PeerInfoResponse(
       address.toString,
-      peerInfo.lastSeen,
-      peerInfo.nodeName,
+      peerInfo.handshake.time,
+      peerInfo.handshake.nodeName,
       peerInfo.connectionType.map(_.toString)
     )
   }

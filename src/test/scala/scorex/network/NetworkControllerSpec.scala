@@ -4,20 +4,20 @@ import java.net.{InetAddress, InetSocketAddress}
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.io.Tcp
-import akka.io.Tcp.{Message => _, _}
 import akka.io.Tcp.SO.KeepAlive
+import akka.io.Tcp.{Message => _, _}
 import akka.testkit.TestProbe
 import akka.util.ByteString
+import org.scalatest.EitherValues._
+import org.scalatest.OptionValues._
+import org.scalatest.TryValues._
 import org.scalatest.{FlatSpec, Matchers}
+import scorex.core.app.{ScorexContext, Version}
 import scorex.core.network._
 import scorex.core.network.message._
 import scorex.core.network.peer.{LocalAddressPeerFeature, LocalAddressPeerFeatureSerializer, PeerInfo, PeerManagerRef}
-import scorex.core.settings.{NetworkSettings, ScorexSettings}
+import scorex.core.settings.ScorexSettings
 import scorex.core.utils.LocalTimeProvider
-import org.scalatest.TryValues._
-import org.scalatest.OptionValues._
-import org.scalatest.EitherValues._
-import scorex.core.app.{ScorexContext, Version}
 
 import scala.concurrent.ExecutionContext
 import scala.util.Try
@@ -353,7 +353,7 @@ class TestPeer(settings: ScorexSettings, networkControllerRef: ActorRef, tcpMana
 
   private val timeProvider = LocalTimeProvider
   private val featureSerializers = Map(LocalAddressPeerFeature.featureId -> LocalAddressPeerFeatureSerializer)
-  private val handshakeSerializer = new HandshakeSerializer(featureSerializers, settings.network.maxHandshakeSize)
+  private val handshakeSerializer = new HandshakeSpec(featureSerializers, settings.network.maxHandshakeSize)
   private val messageSpecs = Seq(GetPeersSpec, PeersSpec)
   private val messagesSerializer = new MessageSerializer(messageSpecs, settings.network.magicBytes)
 
@@ -427,14 +427,16 @@ class TestPeer(settings: ScorexSettings, networkControllerRef: ActorRef, tcpMana
     val message = receiveMessage
     message.spec.messageCode should be (PeersSpec.messageCode)
     PeersSpec.parseBytes(message.input.left.value)
+    ???
   }
 
   /**
     * Send sequence of peer addresses to node
     */
   def sendPeers(peers: Seq[PeerInfo]): Unit = {
-    val msg = Message(PeersSpec, Right(peers), None)
-    sendMessage(msg)
+//    val msg = Message(PeersSpec, Right(peers), None)
+//    sendMessage(msg)
+    ???
   }
 
   /**
