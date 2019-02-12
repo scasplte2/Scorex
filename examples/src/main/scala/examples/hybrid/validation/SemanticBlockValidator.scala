@@ -1,6 +1,6 @@
 package examples.hybrid.validation
 
-import examples.hybrid.blocks.{HybridBlock, PosBlock, PowBlock}
+import examples.hybrid.blocks.{HybridBlock, PosBlock, PowBlock, PowBlockSerializer}
 import scorex.core.block.BlockValidator
 import scorex.crypto.hash.{CryptographicHash, Digest}
 
