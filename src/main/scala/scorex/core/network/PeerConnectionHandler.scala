@@ -158,7 +158,6 @@ class PeerConnectionHandler(val settings: NetworkSettings,
 
     case CommandFailed(Write(msg, ReceivableMessages.Ack(id))) =>
       connection ! ResumeWriting
-      buffer(id, msg)
 
     case CommandFailed(ResumeWriting) => // ignore in ACK mode
 
